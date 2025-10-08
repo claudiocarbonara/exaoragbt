@@ -1,3 +1,16 @@
+export const runtime = 'edge'
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  })
+}
+
 import OpenAI from "openai";
 
 // Se Edge desse problemi nei runtime logs, cambia in "nodejs"
@@ -14,6 +27,12 @@ export async function GET() {
     { headers: { "Content-Type": "application/json" }, status: ok ? 200 : 500 }
   );
 }
+return new Response(JSON.stringify({ reply: text }), {
+  headers: {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+  },
+})
 
 export async function POST(req) {
   try {
