@@ -1,20 +1,19 @@
-export const runtime = 'edge'
-
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  })
-}
-
+// app/api/chat/route.js
 import OpenAI from "openai";
 
-// Se Edge desse problemi nei runtime logs, cambia in "nodejs"
+// Se l'Edge runtime desse errori nei Runtime Logs, cambia in "nodejs"
 export const runtime = "edge";
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export async function OPTIONS() {
+  // preflight CORS
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
 
 const systemPrompt =
   process.env.SYSTEM_PROMPT ??
@@ -24,21 +23,14 @@ export async function GET() {
   const ok = !!process.env.OPENAI_API_KEY;
   return new Response(
     JSON.stringify({ ok, model: process.env.MODEL || "gpt-4o-mini" }),
-    { headers: { "Content-Type": "application/json" }, status: ok ? 200 : 500 }
+    { headers: { "Content-Type": "application/json", ...CORS_HEADERS }, status: ok ? 200 : 500 }
   );
 }
-return new Response(JSON.stringify({ reply: text }), {
-  headers: {
-    'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
-  },
-})
 
 export async function POST(req) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY non configurata");
-    }
+    if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY non configurata");
+
     const body = await req.json().catch(() => ({}));
     const messages = Array.isArray(body.messages) ? body.messages : [];
 
@@ -50,16 +42,15 @@ export async function POST(req) {
       messages: [{ role: "system", content: systemPrompt }, ...messages],
     });
 
-    const text =
-      completion?.choices?.[0]?.message?.content || "Nessuna risposta.";
+    const text = completion?.choices?.[0]?.message?.content || "Nessuna risposta.";
     return new Response(JSON.stringify({ reply: text }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       status: 200,
     });
   } catch (e) {
-    return new Response(
-      JSON.stringify({ error: e?.message || "Errore server" }),
-      { headers: { "Content-Type": "application/json" }, status: 500 }
-    );
+    return new Response(JSON.stringify({ error: e?.message || "Errore server" }), {
+      headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+      status: 500,
+    });
   }
 }
